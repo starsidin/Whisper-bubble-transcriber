@@ -19,11 +19,12 @@ from PyQt6.QtCore import Qt, QThread, pyqtSignal, QPoint
 class AudioRecorder(QThread):
     finished = pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, device_index=None):
         super().__init__()
         self.fs = 16000
         self.recording = False
         self.audio = []
+        self.device_index = device_index
 
     def run(self):
         self.recording = True
@@ -33,9 +34,12 @@ class AudioRecorder(QThread):
             if self.recording:
                 self.audio.extend(indata[:, 0])
 
-        with sd.InputStream(samplerate=self.fs, channels=1, callback=callback):
-            while self.recording:
-                sd.sleep(100)
+        try:
+            with sd.InputStream(samplerate=self.fs, channels=1, callback=callback, device=self.device_index):
+                while self.recording:
+                    sd.sleep(100)
+        except sd.PortAudioError as e:
+            print(f"音频设备错误: {str(e)}")
 
         if self.audio:
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -58,8 +62,10 @@ class WhisperWorker(QThread):
 
     def run(self):
         result = self.model.transcribe(self.file)
-        simplified_text = self.cc.convert(result["text"])
-        self.finished.emit(simplified_text)
+        # 提取标点符号
+        import re
+        # punctuation = re.findall(r'[\W_]', result["text"])
+        self.finished.emit(result["text"])
 
 
 class FloatingWidget(QWidget):
@@ -74,6 +80,7 @@ class FloatingWidget(QWidget):
 
         self.model_name = "base"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        print(self.device)
         self.whisper_model = self.load_model(self.model_name)
 
         self.container = QWidget(self)
@@ -163,6 +170,16 @@ class FloatingWidget(QWidget):
             action.triggered.connect(lambda checked, m=name: self.change_model(m))
             model_menu.addAction(action)
 
+        # 添加麦克风设备选择菜单
+        mic_menu = menu.addMenu("🎙️ 选择麦克风")
+        for i, device in enumerate(sd.query_devices()):
+            if device['max_input_channels'] > 0:
+                action = QAction(device['name'], self)
+                action.setCheckable(True)
+                action.setChecked(i == (self.recorder.device_index if self.recorder.device_index is not None else sd.default.device[0]))
+                action.triggered.connect(lambda checked, idx=i: self.change_mic_device(idx))
+                mic_menu.addAction(action)
+
         menu.addSeparator()
         menu.addAction("❌ 关闭悬浮窗", self.close)
         menu.exec(self.mapToGlobal(pos))
@@ -173,6 +190,11 @@ class FloatingWidget(QWidget):
         QApplication.processEvents()
         self.whisper_model = self.load_model(model_name)
         self.label.setText(f"✅ 模型已切换为：{model_name}")
+
+    def change_mic_device(self, device_index):
+        self.recorder = AudioRecorder(device_index)
+        self.label.setText(f"✅ 已切换麦克风设备")
+        QApplication.processEvents()
 
     def load_model(self, model_name):
         model = whisper.load_model(model_name)
