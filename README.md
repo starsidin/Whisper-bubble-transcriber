@@ -4,8 +4,8 @@
 一个简单易用的 Whisper 语音转文字（Speech-to-Text, STT）桌面悬浮窗程序，支持本地部署（Windows），数据更安全，适用于快捷语音输入场景。  
 A lightweight, local-first floating window tool for voice-to-text using OpenAI Whisper — optimized for quick voice input on Windows.
 
-基于 [OpenAI Whisper](https://github.com/openai/whisper)，录音识别后文字自动复制到剪贴板，并以聊天气泡形式显示在界面上。  
-Built with [OpenAI Whisper](https://github.com/openai/whisper), it records your voice, transcribes it locally, auto-copies the result, and shows it in a chat-bubble style window.
+录音识别后文字自动复制到剪贴板，并以聊天气泡形式显示在界面上。  基于 [OpenAI Whisper](https://github.com/openai/whisper)
+it records your voice, transcribes it locally, auto-copies the result, and shows it in a chat-bubble style window.
 
 ---
 
@@ -32,19 +32,16 @@ Lower-end devices can use smaller models, or consider future integration of loca
 - 🎤 一键悬浮录音  
   One-click floating voice recorder
 
-- 🧠 支持 Whisper 本地模型 (`tiny`, `base`, `small`, `medium`, `large-v3`, `turbo`)  
+- 🧠 支持 Whisper 本地模型 (`base`, `large-v3`, `turbo`)  
   Supports local Whisper models (including turbo)
 
 - 🌐 中英文自动识别  
   Seamless Chinese-English transcription
 
-- 🔁 自动将繁体转换为简体（OpenCC）  
-  Auto converts Traditional Chinese → Simplified Chinese (via OpenCC)
-
-- 📋 自动复制识别文字到剪贴板  
+- 📋 自动复制识别文字到剪贴板，可以在右键菜单中取消  
   Auto copy transcription to clipboard
 
-- 💬 气泡式文本展示  
+- 💬 右键菜单中历史记录自动保存查看  
   Chat-bubble style result display
 
 - 🧩 右键切换模型  
@@ -78,7 +75,7 @@ whisper必须依赖ffmpeg，在官网下载压缩包后，解压缩并添加到�
 2. 点击按钮 🎙️ 开始录音 开始说话
 3. 再次点击 🛑 停止录音 结束录音
 4. 识别结果会显示在界面，并自动复制到剪贴板
-5. 右键弹出菜单，可选择模型或关闭程序
+5. 右键弹出菜单，可选择模型、选择麦克风、查看历史记录、选择是否自动复制或关闭程序
 ￼
 ## 💡 注意事项
 • 默认使用 GPU（若可用），否则回退到 CPU
@@ -94,8 +91,6 @@ Global hotkey support (e.g., F9 to start/stop recording)
 📌 支持粘贴到目标应用（如微信、Word）
 Auto-paste to target apps (e.g., WeChat, Word)
 
-📜 历史记录窗口（可查看并复制以前的识别结果）
-Recognition history viewer (view/copy past results)
 
 ☁️ 模型 API 模式（轻量版，无需本地模型）
 Cloud-based Whisper API option for lightweight use
