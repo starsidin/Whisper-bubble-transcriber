@@ -6,15 +6,26 @@ import torch
 import sounddevice as sd
 import soundfile as sf
 import pyperclip
-from opencc import OpenCC
+import tempfile
+import shutil
 
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QPushButton, QVBoxLayout, QLabel,
-    QMenu, QGraphicsDropShadowEffect
+    QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel,
+    QMenu, QGraphicsDropShadowEffect, QDialog, QTextEdit, QDialogButtonBox
 )
 from PyQt6.QtGui import QColor, QAction
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QPoint
 
+# 打印当前Python及 ffmpeg 信息，方便调试
+print("=== Python可执行路径:", sys.executable)
+print("=== 当前PATH:", os.environ.get("PATH", ""))
+print("=== ffmpeg 位置:", shutil.which("ffmpeg"))
+
+# 在脚本根目录下创建一个 history 文件夹
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+HISTORY_DIR = os.path.join(BASE_DIR, "history")
+if not os.path.exists(HISTORY_DIR):
+    os.makedirs(HISTORY_DIR)
 
 class AudioRecorder(QThread):
     finished = pyqtSignal(str)
@@ -25,6 +36,7 @@ class AudioRecorder(QThread):
         self.recording = False
         self.audio = []
         self.device_index = device_index
+        self.temp_wav = None
 
     def run(self):
         self.recording = True
@@ -39,13 +51,13 @@ class AudioRecorder(QThread):
                 while self.recording:
                     sd.sleep(100)
         except sd.PortAudioError as e:
-            print(f"音频设备错误: {str(e)}")
+            print(f"[AudioRecorder] 音频设备错误: {str(e)}")
 
         if self.audio:
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            self.filename = f"recording_{timestamp}.wav"
-            sf.write(self.filename, self.audio, self.fs)
-            self.finished.emit(self.filename)
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_file:
+                self.temp_wav = tmp_file.name
+            sf.write(self.temp_wav, self.audio, self.fs)
+            self.finished.emit(self.temp_wav)
 
     def stop(self):
         self.recording = False
@@ -58,30 +70,66 @@ class WhisperWorker(QThread):
         super().__init__()
         self.file = file
         self.model = model
-        self.cc = OpenCC("t2s")  # 繁转简
 
     def run(self):
-        result = self.model.transcribe(self.file)
-        # 提取标点符号
-        import re
-        # punctuation = re.findall(r'[\W_]', result["text"])
-        self.finished.emit(result["text"])
+        text = ""
+        try:
+            result = self.model.transcribe(self.file)
+            text = result["text"]
+        except Exception as e:
+            text = f"识别失败: {e}"
+        finally:
+            if os.path.exists(self.file):
+                try:
+                    os.remove(self.file)
+                except OSError as err:
+                    print(f"[WhisperWorker] 删除临时文件时出错: {err}")
+
+        self.finished.emit(text)
+
+
+class HistoryViewer(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("历史记录")
+        self.resize(600, 400)
+
+        layout = QVBoxLayout(self)
+        self.text_edit = QTextEdit()
+        self.text_edit.setReadOnly(True)
+        layout.addWidget(self.text_edit)
+
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok)
+        button_box.accepted.connect(self.accept)
+        layout.addWidget(button_box)
+
+        self.load_all_history()
+
+    def load_all_history(self):
+        lines = []
+        try:
+            for fname in sorted(os.listdir(HISTORY_DIR)):
+                if fname.endswith(".txt"):
+                    full_path = os.path.join(HISTORY_DIR, fname)
+                    with open(full_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                        lines.append(f"=== {fname} ===\n{content}\n")
+            self.text_edit.setPlainText("\n".join(lines))
+        except Exception as e:
+            self.text_edit.setPlainText(f"读取历史记录失败: {e}")
 
 
 class FloatingWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("🧠 Whisper浮动录音")
-        self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint |
-            Qt.WindowType.WindowStaysOnTopHint
-        )
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
-        self.model_name = "base"
+        self.model_name = "turbo"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        print(self.device)
         self.whisper_model = self.load_model(self.model_name)
+        self.auto_copy = True
 
         self.container = QWidget(self)
         self.container.setObjectName("container")
@@ -113,6 +161,22 @@ class FloatingWidget(QWidget):
             }
         """)
 
+        self.copy_button = QPushButton("复制")
+        self.copy_button.setStyleSheet("""
+            QPushButton {
+                background-color: #B2BABB;
+                border: none;
+                color: white;
+                font-size: 12px;
+                padding: 5px 10px;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: #808B96;
+            }
+        """)
+        self.copy_button.clicked.connect(self.copy_text)
+
         self.label = QLabel("")
         self.label.setWordWrap(True)
         self.label.setStyleSheet("""
@@ -124,12 +188,18 @@ class FloatingWidget(QWidget):
             }
         """)
 
-        layout = QVBoxLayout(self.container)
-        layout.addWidget(self.rec_button)
-        layout.addWidget(self.label)
-        layout.setContentsMargins(20, 20, 20, 20)
-        self.resize(340, 180)
-        self.container.resize(340, 180)
+        main_layout = QVBoxLayout(self.container)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+
+        top_layout = QHBoxLayout()
+        top_layout.addWidget(self.rec_button)
+        top_layout.addWidget(self.copy_button)
+        main_layout.addLayout(top_layout)
+
+        main_layout.addWidget(self.label)
+
+        self.resize(380, 200)
+        self.container.resize(380, 200)
 
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
@@ -156,12 +226,30 @@ class FloatingWidget(QWidget):
 
     def on_transcribed(self, text):
         self.label.setText(f"💬 {text}")
-        pyperclip.copy(text)
+        if self.auto_copy:
+            pyperclip.copy(text)
+        self.store_history(text)
         self.rec_button.setText("🎙️ 开始录音")
+
+    def copy_text(self):
+        txt = self.label.text().replace("💬 ", "")
+        if txt.strip():
+            pyperclip.copy(txt)
+
+    def store_history(self, text):
+        if not text.strip():
+            return
+        date_str = datetime.datetime.now().strftime("%Y-%m-%d")
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        filepath = os.path.join(HISTORY_DIR, f"{date_str}.txt")
+        if not os.path.exists(filepath):
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write("")
+        with open(filepath, "a", encoding="utf-8") as f:
+            f.write(f"[{timestamp}] {text}\n")
 
     def show_context_menu(self, pos: QPoint):
         menu = QMenu(self)
-
         model_menu = menu.addMenu("🧠 选择模型")
         for name in ["base", "turbo", "large-v3"]:
             action = QAction(name, self)
@@ -170,7 +258,6 @@ class FloatingWidget(QWidget):
             action.triggered.connect(lambda checked, m=name: self.change_model(m))
             model_menu.addAction(action)
 
-        # 添加麦克风设备选择菜单
         mic_menu = menu.addMenu("🎙️ 选择麦克风")
         for i, device in enumerate(sd.query_devices()):
             if device['max_input_channels'] > 0:
@@ -181,8 +268,26 @@ class FloatingWidget(QWidget):
                 mic_menu.addAction(action)
 
         menu.addSeparator()
+        auto_copy_action = QAction("自动复制文字", self)
+        auto_copy_action.setCheckable(True)
+        auto_copy_action.setChecked(self.auto_copy)
+        auto_copy_action.triggered.connect(self.toggle_auto_copy)
+        menu.addAction(auto_copy_action)
+
+        history_action = QAction("查看历史记录", self)
+        history_action.triggered.connect(self.view_history)
+        menu.addAction(history_action)
+
+        menu.addSeparator()
         menu.addAction("❌ 关闭悬浮窗", self.close)
         menu.exec(self.mapToGlobal(pos))
+
+    def toggle_auto_copy(self):
+        self.auto_copy = not self.auto_copy
+
+    def view_history(self):
+        dlg = HistoryViewer(self)
+        dlg.exec()
 
     def change_model(self, model_name):
         self.model_name = model_name
@@ -193,7 +298,8 @@ class FloatingWidget(QWidget):
 
     def change_mic_device(self, device_index):
         self.recorder = AudioRecorder(device_index)
-        self.label.setText(f"✅ 已切换麦克风设备")
+        self.recorder.finished.connect(self.on_recorded)
+        self.label.setText("✅ 已切换麦克风设备")
         QApplication.processEvents()
 
     def load_model(self, model_name):
@@ -211,10 +317,12 @@ class FloatingWidget(QWidget):
             self.move(event.globalPosition().toPoint() - self.drag_position)
             event.accept()
 
-
-if __name__ == "__main__":
+def main():
     app = QApplication(sys.argv)
     window = FloatingWidget()
     window.move(100, 100)
     window.show()
     sys.exit(app.exec())
+
+if __name__ == "__main__":
+    main()
