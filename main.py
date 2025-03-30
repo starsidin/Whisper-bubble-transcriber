@@ -8,17 +8,16 @@ import soundfile as sf
 import pyperclip
 import tempfile
 import shutil
+import subprocess
 
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel,
-    QMenu, QGraphicsDropShadowEffect, QDialog, QTextEdit, QDialogButtonBox
+    QMenu, QGraphicsDropShadowEffect, QDialog, QTextEdit, QDialogButtonBox, QMessageBox
 )
 from PyQt6.QtGui import QColor, QAction
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QPoint
 
 # 打印当前Python及 ffmpeg 信息，方便调试
-print("=== Python可执行路径:", sys.executable)
-print("=== 当前PATH:", os.environ.get("PATH", ""))
 print("=== ffmpeg 位置:", shutil.which("ffmpeg"))
 
 # 在脚本根目录下创建一个 history 文件夹
@@ -91,32 +90,18 @@ class WhisperWorker(QThread):
 class HistoryViewer(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("历史记录")
-        self.resize(600, 400)
-
-        layout = QVBoxLayout(self)
-        self.text_edit = QTextEdit()
-        self.text_edit.setReadOnly(True)
-        layout.addWidget(self.text_edit)
-
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok)
-        button_box.accepted.connect(self.accept)
-        layout.addWidget(button_box)
-
-        self.load_all_history()
-
-    def load_all_history(self):
-        lines = []
         try:
-            for fname in sorted(os.listdir(HISTORY_DIR)):
-                if fname.endswith(".txt"):
-                    full_path = os.path.join(HISTORY_DIR, fname)
-                    with open(full_path, "r", encoding="utf-8") as f:
-                        content = f.read()
-                        lines.append(f"=== {fname} ===\n{content}\n")
-            self.text_edit.setPlainText("\n".join(lines))
+            if not os.path.exists(HISTORY_DIR):
+                os.makedirs(HISTORY_DIR)
+            if sys.platform == "win32":
+                os.startfile(HISTORY_DIR)
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", HISTORY_DIR])
+            else:
+                subprocess.Popen(["xdg-open", HISTORY_DIR])
         except Exception as e:
-            self.text_edit.setPlainText(f"读取历史记录失败: {e}")
+            QMessageBox.critical(self, "错误", f"无法打开历史记录文件夹：\n{e}")
+        self.close()
 
 
 class FloatingWidget(QWidget):
