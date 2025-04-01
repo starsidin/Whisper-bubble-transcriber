@@ -95,5 +95,5 @@ Auto-paste to target apps (e.g., WeChat, Word)
 ☁️ 模型 API 模式（轻量版，无需本地模型）
 Cloud-based Whisper API option for lightweight use
 
-流式识别、断句
+流式识别、断句、一键翻译。
 ## 欢迎大家开发想要的功能，或对需要的功能进行留言
