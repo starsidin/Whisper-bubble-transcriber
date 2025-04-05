@@ -1,7 +1,7 @@
 # 🎙️ Whisper 悬浮窗语音输入助手  
 **Whisper Floating Speech Input Assistant**
 
-一个简单易用的 Whisper 语音转文字（Speech-to-Text, STT）桌面悬浮窗程序，支持本地部署（Windows），数据更安全，适用于快捷语音输入场景。  
+一个简单易用的 Whisper模型语音转文字（Speech-to-Text, STT）桌面悬浮窗程序，支持本地部署（Windows），数据更安全，适用于快捷语音输入场景。  
 A lightweight, local-first floating window tool for voice-to-text using OpenAI Whisper — optimized for quick voice input on Windows.
 
 录音识别后文字自动复制到剪贴板，并以聊天气泡形式显示在界面上。  基于 [OpenAI Whisper](https://github.com/openai/whisper)
@@ -25,32 +25,27 @@ Lower-end devices can use smaller models, or consider future integration of loca
 
 ---
 
-## 🎯 功能特性 | Features
+## 🎯 功能特性 | Features 0.0.2
 
-![功能图1](https://github.com/user-attachments/assets/805b7edc-8c0d-417d-a9e7-c3dfee018605)
+![image](https://github.com/user-attachments/assets/76a60537-4afd-47c6-83ee-e5dcc0af1134)
 
-- 🎤 一键悬浮录音  
-  One-click floating voice recorder
+
+- 🎤 一键悬浮录音：支持麦克风或者虚拟音频输入  
 
 - 🧠 支持 Whisper 本地模型 (`base`, `large-v3`, `turbo`)  
-  Supports local Whisper models (including turbo)
 
 - 🌐 中英文自动识别  
-  Seamless Chinese-English transcription
 
-- 📋 自动复制识别文字到剪贴板，可以在右键菜单中取消  
-  Auto copy transcription to clipboard
+- 📋 自动复制识别文字到剪贴板，增加在右键菜单中取消自动复制的功能  
 
 - 💬 右键菜单中历史记录自动保存查看  
-  Chat-bubble style result display
 
 - 🧩 右键切换模型  
-  Right-click to switch model on the fly
 
 - 🌈 无边框、圆角、可拖动、置顶悬浮窗  
-  Borderless, rounded, draggable, always-on-top UI
 
-![功能图2](https://github.com/user-attachments/assets/274580f7-42c2-4e82-8be5-b1167c2c1792)
+![image](https://github.com/user-attachments/assets/41ac331e-7515-4275-b5c0-6f7ad2792e57)
+
 
 ---
 
@@ -70,7 +65,7 @@ whisper必须依赖ffmpeg，在官网下载压缩包后，解压缩并添加到�
 安装后在命令行输入ffmpeg弹出版本信息就是安装完成了
 
 ## ✅ 使用方法
-
+注意：如果系统没有音频输入设备（麦克风、虚拟音频输入）可能会无法打开
 1. 运行后，会出现一个小型悬浮窗
 2. 点击按钮 🎙️ 开始录音 开始说话
 3. 再次点击 🛑 停止录音 结束录音
