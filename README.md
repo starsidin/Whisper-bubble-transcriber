@@ -76,19 +76,20 @@ whisper必须依赖ffmpeg，在官网下载压缩包后，解压缩并添加到�
 • 默认使用 GPU（若可用），否则回退到 CPU
 • 模型将自动下载缓存到本地（首次运行可能稍慢）
 • 若需更高准确率，可切换为 large-v3 模型（需要较高显存）
+• 如果需要录制屏幕音，需要虚拟声卡，我用的是https://vb-audio.com/Cable/，在屏幕右下方喇叭选择相应名称扬声器即可捕获声音。 
+• 中文标点符号可能无法正确添加
 
 ## ✅ 即将添加的功能 | Coming Soon
 🧠 支持其他模型
 
 ⌨️ 添加快捷键支持（如 F9 开始/停止）
-Global hotkey support (e.g., F9 to start/stop recording)
 
-📌 支持粘贴到目标应用（如微信、Word）
-Auto-paste to target apps (e.g., WeChat, Word)
+
+📌 支持翻译到目标语言
 
 
 ☁️ 模型 API 模式（轻量版，无需本地模型）
-Cloud-based Whisper API option for lightweight use
+
 
 流式识别、断句、一键翻译。
 ## 欢迎大家开发想要的功能，或对需要的功能进行留言
