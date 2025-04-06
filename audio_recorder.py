@@ -78,16 +78,38 @@ class AudioRecorder(QThread):
         """
         self.recording = False
 
-def get_available_microphones():
+def get_available_microphones(include_loopback=False, print_info=False):
     """
-    获取可用的音频输入设备列表(包括麦克风和扬声器)
-    
+    获取可用的音频输入设备（真正可用于录音的），并标记是否为内放设备。
+
+    参数:
+        include_loopback (bool): 是否包含 loopback 判断列（默认False，仅返回 index 和 name）
+        print_info (bool): 是否打印可用设备列表
+
     返回:
-        list: 包含元组的列表，每个元组格式为(设备索引, 设备名称)
-        返回具有输入通道或输出通道的设备
+        list: 每项为 (index, name) 或 (index, name, is_loopback)
     """
+    loopback_keywords = ['loopback', 'stereo mix', 'voice meter', 'virtual audio']
     devices = []
+
     for i, device in enumerate(sd.query_devices()):
-        if device['max_input_channels'] > 0 or device['max_output_channels'] > 0:
-            devices.append((i, device['name']))
+        # 只保留真正可用的“输入设备”
+        if device['max_input_channels'] > 0:
+            name = device['name']
+            is_loopback = any(kw in name.lower() for kw in loopback_keywords)
+            if include_loopback:
+                devices.append((i, name, is_loopback))
+            else:
+                devices.append((i, name))
+
+    if print_info:
+        print("🎙 可用音频输入设备：")
+        for d in devices:
+            if include_loopback:
+                idx, name, is_loop = d
+                tag = "✅ 支持内录" if is_loop else ""
+                print(f"[{idx}] {name} {tag}")
+            else:
+                idx, name = d
+                print(f"[{idx}] {name}")
     return devices

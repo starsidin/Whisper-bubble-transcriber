@@ -8,7 +8,7 @@ from PyQt6.QtGui import QColor, QAction
 from PyQt6.QtCore import Qt, QPoint
 
 from audio_recorder import AudioRecorder, get_available_microphones
-from whisper_manager import WhisperManager, WhisperWorker
+from models import ModelManager
 from utils import copy_to_clipboard, get_history_dir
 from ui.history_viewer import HistoryViewer
 
@@ -21,9 +21,9 @@ class FloatingWidget(QWidget):
 
         self.drag_position = QPoint()
 
-        self.whisper_manager = WhisperManager()
-        self.model_name = "turbo"
-        self.whisper_model = self.whisper_manager.load_model(self.model_name)
+        self.model_manager = ModelManager()
+        self.model_name = "whisper:turbo"
+        self.model = self.model_manager.load_model(self.model_name)
         self.auto_copy = True
 
         self.setup_ui_container()
@@ -135,7 +135,7 @@ class FloatingWidget(QWidget):
 
     def on_recorded(self, file):
         self.label.setPlainText("🎧 正在识别...")  # ✅ 改用 setPlainText
-        self.whisper_thread = WhisperWorker(file, self.whisper_model)
+        self.whisper_thread = self.model_manager.create_worker(file)
         self.whisper_thread.finished.connect(self.on_transcribed)
         self.whisper_thread.start()
 
@@ -176,7 +176,7 @@ class FloatingWidget(QWidget):
 
         # 模型选择菜单
         model_menu = menu.addMenu("🧠 选择模型")
-        for name in self.whisper_manager.get_available_models():
+        for name in self.model_manager.get_available_models():
             action = QAction(name, self)
             action.setCheckable(True)
             action.setChecked(name == self.model_name)
@@ -248,7 +248,7 @@ class FloatingWidget(QWidget):
         """
         self.model_name = model_name
         self.label.setPlainText(f"🔄 正在切换模型为：{model_name} ...")
-        self.whisper_model = self.whisper_manager.load_model(model_name)
+        self.model = self.model_manager.load_model(model_name)
         self.label.setPlainText(f"✅ 模型已切换为：{model_name}")
 
     def change_mic_device(self, device_index):

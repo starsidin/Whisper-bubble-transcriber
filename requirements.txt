@@ -9,3 +9,5 @@ opencc
 PyQt6
 ffmpeg
 openai-whisper
+modelscope
+addict
