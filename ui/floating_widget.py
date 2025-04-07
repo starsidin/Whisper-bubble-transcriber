@@ -11,6 +11,7 @@ from audio_recorder import AudioRecorder, get_available_microphones
 from models import ModelManager
 from utils import copy_to_clipboard, get_history_dir
 from ui.history_viewer import HistoryViewer
+from ui.api_key_dialog import APIKeyDialog
 
 class FloatingWidget(QWidget):
     def __init__(self):
@@ -204,6 +205,11 @@ class FloatingWidget(QWidget):
         history_action = QAction("查看历史记录", self)
         history_action.triggered.connect(self.view_history)
         menu.addAction(history_action)
+        
+        # API密钥管理选项
+        api_key_action = QAction("🔑 管理API密钥", self)
+        api_key_action.triggered.connect(self.manage_api_keys)
+        menu.addAction(api_key_action)
 
         menu.addSeparator()
         # 关闭窗口选项
@@ -236,6 +242,15 @@ class FloatingWidget(QWidget):
         """
         dlg = HistoryViewer(self)
         dlg.exec()
+        
+    def manage_api_keys(self):
+        """
+        管理API密钥
+        
+        打开API密钥管理对话框
+        """
+        dlg = APIKeyDialog(self)
+        dlg.exec()
 
     def change_model(self, model_name):
         """
@@ -243,11 +258,20 @@ class FloatingWidget(QWidget):
         
         参数:
             model_name: 要切换的模型名称
+
         
-        加载新模型并更新UI显示
+        卸载当前模型，加载新模型并更新UI显示
         """
         self.model_name = model_name
         self.label.setPlainText(f"🔄 正在切换模型为：{model_name} ...")
+        
+        # 先卸载当前模型
+        if self.model is not None:
+            self.label.setPlainText(f"🔄 正在卸载当前模型...")
+            self.model_manager.unload_model()
+            self.model = None
+        
+        # 加载新模型
         self.model = self.model_manager.load_model(model_name)
         self.label.setPlainText(f"✅ 模型已切换为：{model_name}")
 

@@ -11,3 +11,4 @@ ffmpeg
 openai-whisper
 modelscope
 addict
+dashscope

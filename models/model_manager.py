@@ -1,14 +1,17 @@
 from typing import Optional
 from .whisper_manager import WhisperManager,WhisperWorker
 from .modelscope_manager import ModelScopeManager ,ModelScopeWorker
+from .api_manager import APIManager, APIWorker
 
 class ModelManager:
     def __init__(self):
         self.whisper_manager = WhisperManager()
         self.modelscope_manager = ModelScopeManager()
+        self.api_manager = APIManager()
         self.current_model = None
         self.current_model_type = None
         self.current_model_name = None
+        self.api_key = None
 
     def get_available_models(self):
         """获取所有可用的模型列表
@@ -18,7 +21,8 @@ class ModelManager:
         """
         whisper_models = [f"whisper:{model}" for model in self.whisper_manager.get_available_models()]
         modelscope_models = [f"modelscope:{model}" for model in self.modelscope_manager.get_available_models()]
-        return whisper_models + modelscope_models
+        api_models = [f"api:{model}" for model in self.api_manager.get_available_models()]
+        return whisper_models + modelscope_models + api_models
 
     def unload_model(self):
         """卸载当前加载的模型，释放内存"""
@@ -27,6 +31,8 @@ class ModelManager:
                 self.whisper_manager.unload_model()
             elif self.current_model_type == "modelscope":
                 self.modelscope_manager.unload_model()
+            elif self.current_model_type == "api":
+                self.api_manager.unload_model()
             self.current_model = None
             self.current_model_type = None
             self.current_model_name = None
@@ -52,6 +58,11 @@ class ModelManager:
             elif model_type == "modelscope":
                 self.current_model = self.modelscope_manager.load_model(model_name)
                 self.current_model_type = "modelscope"
+            elif model_type == "api":
+                if not self.api_key:
+                    raise ValueError("使用API模型需要先设置API密钥")
+                self.current_model = self.api_manager.load_model(model_name)
+                self.current_model_type = "api"
             else:
                 raise ValueError(f"不支持的模型类型: {model_type}")
             
@@ -77,6 +88,8 @@ class ModelManager:
             return self.whisper_manager.transcribe(self.current_model, audio_file)
         elif self.current_model_type == "modelscope":
             return self.modelscope_manager.transcribe(self.current_model, audio_file)
+        elif self.current_model_type == "api":
+            return self.api_manager.transcribe(audio_file)
         
         raise ValueError(f"不支持的模型类型: {self.current_model_type}")
 
@@ -90,6 +103,15 @@ class ModelManager:
             "type": self.current_model_type,
             "name": self.current_model_name
         }
+        
+    def set_api_key(self, api_key: str):
+        """设置API密钥
+
+        Args:
+            api_key: 达摩院API密钥
+        """
+        self.api_key = api_key
+        self.api_manager.set_api_key(api_key)
 
     def create_worker(self, audio_file: str, task="transcribe", language='zh') -> object:
         """创建一个用于语音识别的worker实例
@@ -113,5 +135,9 @@ class ModelManager:
         elif self.current_model_type == "modelscope":
             from .modelscope_manager import ModelScopeWorker
             return ModelScopeWorker(audio_file, self.current_model)
+        elif self.current_model_type == "api":
+            if not self.api_key:
+                raise ValueError("使用API模型需要先设置API密钥")
+            return APIWorker(audio_file, self.api_key)
         
         raise ValueError(f"不支持的模型类型: {self.current_model_type}")

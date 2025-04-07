@@ -6,7 +6,6 @@ A lightweight, local-first floating window tool for voice-to-text using OpenAI W
 录音识别后文字自动复制到剪贴板，并以聊天气泡形式显示在界面上。  基于 [OpenAI Whisper](https://github.com/openai/whisper)
 
 ---
-![image](https://github.com/user-attachments/assets/bc7f3880-6049-45d0-8825-d830f2c52513)
 
 ### 🚀 推荐模型 | Recommended Model
 
