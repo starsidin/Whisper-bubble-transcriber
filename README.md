@@ -1,3 +1,21 @@
+> ⚠️ **重要通知：项目已重定向与全面升级** ⚠️  
+> **本仓库已停止更新，后续的全新版本将不再在此库发布！** 新版本仓库链接将在后续发布，敬请期待。
+
+## 🚀 新版本升级亮点预告
+为了提供更出色的体验，我们正在进行底层的全面重构：
+1. **核心模型全面升级**：当前版本主要基于 **[OpenAI Whisper](https://github.com/openai/whisper)** 与 **[FunASR (阿里达摩院模型)](https://github.com/modelscope/FunASR)**；后续的新版本将全面接入更强大的 **[通义千问 ASR (Qwen-Audio / SenseVoice)](https://github.com/FunAudioLLM/SenseVoice)** 模型，带来更极致的识别准确率和性能。
+2. **前后端分离架构**：打破现有的单体架构，拆分为**独立的前端服务**与**后端服务**。
+3. **极致轻量的前端**：得益于前后端分离，前端应用将大幅减负，不再需要庞大的本地环境依赖，资源占用极低。
+4. **一键开箱即用**：我们将直接提供打包好的 **Release 独立运行版本**，无需繁琐的 Python 环境和依赖配置，支持一键下载、直接使用！
+
+## 📌 相关模型与技术引用 (References & SEO)
+为了方便大家学习和搜索引擎收录，以下是本项目及后续版本涉及的核心技术栈与热门引用：
+- **Whisper**: [https://github.com/openai/whisper](https://github.com/openai/whisper) - OpenAI 强大的多语言语音识别与翻译系统。
+- **FunASR**: [https://github.com/modelscope/FunASR](https://github.com/modelscope/FunASR) - 阿里达摩院开源的端到端语音识别工具包。
+- **通义千问 ASR (SenseVoice)**: [https://github.com/FunAudioLLM/SenseVoice](https://github.com/FunAudioLLM/SenseVoice) - 阿里通义千问团队开源的多语言语音大模型，新版核心引擎。
+- **热门话题关键字**: `语音转文字`, `Speech-to-Text`, `STT`, `ASR`, `自动语音识别`, `桌面悬浮窗录音`, `AI语音助手`, `前后端分离`, `一键部署`, `效率工具`, `开源语音识别`, `本地化部署`.
+
+---
 # 🎙️ Whisper 悬浮窗语音输入助手  
 **Whisper Floating Speech Input Assistant**
 
